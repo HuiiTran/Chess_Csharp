@@ -17,7 +17,21 @@ public class King : BasePiece
         GetComponent<Image>().sprite = Resources.Load<Sprite>("Image/King");
     
     }
-    
+    public void setCheck(bool state)
+    {
+        isCheck = state;
+        if(state)
+        {
+            currentCell.outlineImage.GetComponent<Image>().color = new Color(1, (float)0.5, (float)0.2, (float)0.5);
+            currentCell.outlineImage.enabled = true;
+        }
+        else
+        {
+            currentCell.outlineImage.GetComponent<Image>().color = new Color(1, 0, 0, (float)0.0);
+            currentCell.outlineImage.enabled = false;
+        }
+    }
+
     public override void Kill()
     {
         base.Kill();

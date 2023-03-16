@@ -41,6 +41,10 @@ public class PieceManager : MonoBehaviour
     [HideInInspector]
     public bool checkVerificationInProcess = false;
 
+    public ClockManager clockManager;
+    public static float blackTime = 60;
+    public static float whiteTime = 60;
+
     private string[] pieceOrder = { "P", "P", "P", "P", "P", "P", "P", "P",
         "R", "KN", "B", "Q", "K", "B", "KN", "R" };
 
@@ -152,16 +156,6 @@ public class PieceManager : MonoBehaviour
         }
     }
 
-    
-    private void SetInteractive(List<BasePiece> pieces, bool state)
-    {
-        foreach(BasePiece piece in pieces)
-        {
-            if (piece.inDrag)
-                piece.OnEndDrag(null);
-            piece.enabled = state;
-        }
-    }
 
     //set up
     public void Setup(Board board)
@@ -186,10 +180,21 @@ public class PieceManager : MonoBehaviour
 
         enPassantCell = null;
         checkVerificationInProcess = false;
-
+        clockManager.Setup(whiteTime, blackTime, this);
 
         SetInteractive(whitePieces, true);            
  
+    }
+
+    //make piece dragable
+    private void SetInteractive(List<BasePiece> pieces, bool state)
+    {
+        foreach(BasePiece piece in pieces)
+        {
+            if (piece.inDrag)
+                piece.OnEndDrag(null);
+            piece.enabled = state;
+        }
     }
     public King getKing(bool isWhite)
     {
@@ -197,5 +202,18 @@ public class PieceManager : MonoBehaviour
             return whiteKing;
         else
             return blackKing;
+    }
+    //create turn
+    public void SetTurn(bool isWhiteTurn)
+    {
+        if(isKingAlive == false)
+            return;
+        SetInteractive(whitePieces, isWhiteTurn);
+        SetInteractive(blackPieces, !isWhiteTurn);
+        if (clockManager.launched == false)
+        {
+            clockManager.StartClocks();
+        }
+        clockManager.setTurn(isWhiteTurn);
     }
 }

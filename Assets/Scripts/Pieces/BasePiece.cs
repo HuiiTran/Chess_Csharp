@@ -87,15 +87,65 @@ public class BasePiece : EventTrigger
         AudioClip clip = null;
         if (targetCell.currentPiece == null)
         {
-            clip = (AudioClip)Resources.Load("Sound/move");
+            clip = (AudioClip)Resources.Load("Sounds/move");
         }
         else
         {
-            clip = (AudioClip)Resources.Load("Sound/capture");
+            clip = (AudioClip)Resources.Load("Sounds/capture");
         }
+        // Disable check
+        if (pieceManager.getKing(isWhite).isCheck)
+        {
+            pieceManager.getKing(isWhite).setCheck(false);
+        }
+
+        targetCell.RemovePiece();
+
+
+        currentCell.currentPiece = null;
+        currentCell = targetCell;
+        currentCell.currentPiece = this;
+
+        transform.position = currentCell.transform.position;
+        targetCell = null;
+
+        hasMoved = true;
+
+        if(pieceManager.enPassantCell != null)
+        {
+            pieceManager.enPassantCell.enPassant = null;
+            pieceManager.enPassantCell = null;
+        }
+
+        //sound
+        if (pieceManager.gameState != GameState.INGAME)
+            clip = null;
+        if (clip != null)
+            pieceManager.audio.PlayOneShot(clip);
     }
 
-
+    public bool PossibleMove(bool isWhite)
+    {
+        foreach (List<Cell> row in currentCell.board.allCells)
+        {
+            foreach (Cell boardCell in row)
+            {
+                BasePiece piece = boardCell.currentPiece;
+                if (piece != null && piece.isWhite == isWhite)
+                {
+                    piece.CheckPathing();
+                    if (piece.highlightedCells.Count > 0)
+                    {
+                        piece.highlightedCells.Clear();
+                        return true;
+                    }
+                    piece.highlightedCells.Clear();
+                }
+            }
+        }
+        return false;
+    }
+    
     //add cell to list
     protected void addPossibleCell(Cell possibleCell)
     {
@@ -164,6 +214,8 @@ public class BasePiece : EventTrigger
         CreateCellPath(1, -1, movement.z);
 
     }
+
+
     //drag piece
     public override void OnBeginDrag(PointerEventData eventData)
     {
@@ -204,7 +256,7 @@ public class BasePiece : EventTrigger
             }
         }
 
-        // Return to his original position
+        
         if (!targetCell || pieceManager.gameState != GameState.INGAME)
         {
             transform.position = currentCell.transform.position; // gameObject
@@ -214,7 +266,7 @@ public class BasePiece : EventTrigger
             Move();                   
         }
 
-        // clear highlight
+        
         ClearCellsHighlight();
        
     }
