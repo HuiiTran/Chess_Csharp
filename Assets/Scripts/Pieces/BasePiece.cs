@@ -27,10 +27,12 @@ public class BasePiece : EventTrigger
     protected Vector3Int movement = Vector3Int.one;
     protected List<Cell> highlightedCells = new List<Cell>();
     protected List<Cell> attackedCells = new List<Cell>();
+    protected List<Cell> previousCells = new List<Cell>();
 
     private Cell targetCell = null;
 
     public bool inDrag = false;
+    public bool inClick = false;
 
     public PieceManager GetPieceManager()
     {
@@ -53,6 +55,7 @@ public class BasePiece : EventTrigger
     //init piece
     public virtual void Setup(bool newIsWhite, PieceManager newPM)
     {
+        inClick = false;
         inDrag = false;
         pieceManager = newPM;
         isWhite = newIsWhite;
@@ -64,7 +67,7 @@ public class BasePiece : EventTrigger
         if(isWhite)
             GetComponent<Image>().color = Color.white;
         else
-            GetComponent<Image>().color = Color.gray;//new Color(0, 0, 0,(float)0.65);
+            GetComponent<Image>().color = new Color(0, 0, 0,(float)0.65);
     }
 
 
@@ -87,7 +90,7 @@ public class BasePiece : EventTrigger
         AudioClip clip = null;
         if (targetCell.currentPiece == null)
         {
-            clip = (AudioClip)Resources.Load("Sounds/move");
+            clip = (AudioClip)Resources.Load("Sounds/move-self");
         }
         else
         {
@@ -101,6 +104,25 @@ public class BasePiece : EventTrigger
 
         targetCell.RemovePiece();
 
+        bool castling = false;
+        //  castle
+        if (currentCell.currentPiece.GetType() == typeof(King) && currentCell.currentPiece.hasMoved == false)
+        {
+            if(targetCell.boardPosition.x == 2)
+            {
+                BasePiece rook = currentCell.board.allCells[0][currentCell.boardPosition.y].currentPiece;
+                rook.targetCell = currentCell.board.allCells[3][currentCell.boardPosition.y];
+                rook.Move();
+                castling = true;
+            }
+            else if(targetCell.boardPosition.x == 6)
+            {
+                BasePiece rook = currentCell.board.allCells[7][currentCell.boardPosition.y].currentPiece;
+                rook.targetCell = currentCell.board.allCells[5][currentCell.boardPosition.y];
+                rook.Move();
+                castling = true;
+            }
+        }
 
         currentCell.currentPiece = null;
         currentCell = targetCell;
@@ -117,11 +139,28 @@ public class BasePiece : EventTrigger
             pieceManager.enPassantCell = null;
         }
 
+        pieceManager.checkVerificationInProcess = true;
+        if (isCheckVerif(isWhite))
+        {
+            pieceManager.getKing(!isWhite).setCheck(true);
+            clip = (AudioClip)Resources.Load("Sounds/checksound");
+        }
+        pieceManager.checkVerificationInProcess = false;
+
+        //check if checkmate
+        CheckGameOver(!isWhite);
+
         //sound
         if (pieceManager.gameState != GameState.INGAME)
             clip = null;
         if (clip != null)
             pieceManager.audio.PlayOneShot(clip);
+
+        // change turn
+        if (!pieceManager.AITurn && pieceManager.gameState == GameState.INGAME && !castling)
+        {
+            pieceManager.SetTurn(!isWhite);
+        }
     }
 
     public bool PossibleMove(bool isWhite)
@@ -154,6 +193,11 @@ public class BasePiece : EventTrigger
         else
             highlightedCells.Add(possibleCell);
     }
+    // //previous move
+    // protected void addPreviousCell(Cell previousCell)
+    // {
+    //     previousCells.Add(previousCell);
+    // }
 
     //Check posibility of a piece
     private void CreateCellPath(int xDirection, int yDirection, int movement)
@@ -178,18 +222,20 @@ public class BasePiece : EventTrigger
                 {
                     if (state == CellState.ENEMY) //set color for capture piece
                     {
-                        targeted.outlineImage.GetComponent<Image>().color = new Color(1, 0, 0, (float)0.5);
+                        targeted.outlineImage.GetComponent<Image>().color = new Color(1, 0, 0, (float)0.5);//red
                     }
                     else
                     {
-                        targeted.outlineImage.GetComponent<Image>().color = new Color(0, 1, 0, (float)0.5);
+                        targeted.outlineImage.GetComponent<Image>().color = new Color(0, 1, 0, (float)0.5);//green
                     }
 
-                    addPossibleCell(targeted);
+                    
                 }
-                if (state == CellState.ENEMY || state == CellState.FRIEND || state == CellState.CHECK_ENEMY || state == CellState.CHECK_FRIEND)
-                break;
-            }   
+                addPossibleCell(targeted);
+                
+            } 
+            if (state == CellState.ENEMY || state == CellState.FRIEND || state == CellState.CHECK_ENEMY || state == CellState.CHECK_FRIEND)
+                break;  
         }
     }
 
@@ -215,6 +261,57 @@ public class BasePiece : EventTrigger
 
     }
 
+
+    //highlight cell
+    protected void ShowCellsHighlight()
+    {
+        foreach (Cell cell in highlightedCells)
+            cell.outlineImage.enabled = true;
+    }
+    //clear highligh cell
+    protected void ClearCellsHighlight()
+    {
+        foreach (Cell cell in highlightedCells)
+            cell.outlineImage.enabled = false;
+
+        highlightedCells.Clear();
+    }
+
+
+    // //show previous move
+    // protected void ShowPreviousHightlight()
+    // {
+    //     foreach (Cell cell in previousCells)
+    //         cell.outlineImage.enabled = true;
+    // }
+    // //clear privous move
+    // protected void ClearPreviousHightlight()
+    // {
+    //     foreach (Cell cell in previousCells)
+    //         cell.outlineImage.enabled = false;
+    //     previousCells.Clear();
+    // }
+
+
+    //click
+    // public override void OnPointerDown(PointerEventData data)
+    // {
+        
+    //     inClick = true;
+    //     // Test for cells
+    //     CheckPathing();
+
+    //     // Show valid cells
+    //     ShowCellsHighlight();
+ 
+    // }
+
+
+    // public override void OnPointerExit(PointerEventData data)
+    // {
+    //     inClick = false;
+    //     ClearCellsHighlight();
+    // }
 
     //drag piece
     public override void OnBeginDrag(PointerEventData eventData)
@@ -242,7 +339,7 @@ public class BasePiece : EventTrigger
     public override void OnEndDrag(PointerEventData eventData)
     {
         base.OnEndDrag(eventData);
-
+        
         inDrag = false;
 
         // Get target cell
@@ -259,32 +356,43 @@ public class BasePiece : EventTrigger
         
         if (!targetCell || pieceManager.gameState != GameState.INGAME)
         {
-            transform.position = currentCell.transform.position; // gameObject
+            transform.position = currentCell.transform.position; 
         }
         else
         {
-            Move();                   
-        }
+            if (PieceManager.AImode)
+            {
+                string move = "";
 
-        
+                move += pieceManager.posA[currentCell.boardPosition.x];
+                move += pieceManager.posB[currentCell.boardPosition.y];
+                
+               
+                move += pieceManager.posA[targetCell.boardPosition.x];
+                move += pieceManager.posB[targetCell.boardPosition.y];
+
+                
+
+                // If promotion
+                if (this.GetType() == typeof(Pawn) && (TargetCell.boardPosition.y == 0 || TargetCell.boardPosition.y == 7))
+                {
+                    move += "q";
+                }
+                Debug.Log(move);
+                pieceManager.stockfish.setAImove(move);
+                Move();
+
+            }
+            else
+            {
+                Move(); 
+            }     
+        }
         ClearCellsHighlight();
        
     }
 
-    //highlight cell
-    protected void ShowCellsHighlight()
-    {
-        foreach (Cell cell in highlightedCells)
-            cell.outlineImage.enabled = true;
-    }
-    //clear highligh cell
-    protected void ClearCellsHighlight()
-    {
-        foreach (Cell cell in highlightedCells)
-            cell.outlineImage.enabled = false;
-
-        highlightedCells.Clear();
-    }
+    
 
     public void Reset()
     {
@@ -326,5 +434,28 @@ public class BasePiece : EventTrigger
         attackedCells.Clear();
     }
 
-   
+    public void CheckGameOver(bool isWhite)
+    {
+        if( !PossibleMove(isWhite))
+        {
+            if(pieceManager.getKing(isWhite).isCheck)
+            {
+                if (isWhite)
+                {
+                    pieceManager.gameState = GameState.BLACK_WIN;
+                }
+                else
+                {
+                    pieceManager.gameState = GameState.WHITE_WIN;
+                }
+            }
+            else
+            {
+                pieceManager.gameState = GameState.DRAW;
+            }
+            //Debug.Log(pieceManager.gameState);
+            pieceManager.ShowResult();
+        }
+    }
+
 }

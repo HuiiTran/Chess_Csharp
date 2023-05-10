@@ -3,9 +3,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class Pawn : BasePiece
 {
+    
     public override void Setup(bool newIsWhite, PieceManager newPM)
     {
         base.Setup(newIsWhite, newPM);
@@ -35,6 +37,7 @@ public class Pawn : BasePiece
         if (currentCell.boardPosition.y == 0 || currentCell.boardPosition.y == 7)
         {
             //promotion
+            pieceManager.PawnPromotion(this, beforeMove);
         }
     }
     private bool MatchesState(Cell target, CellState targetState)

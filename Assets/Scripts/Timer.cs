@@ -61,7 +61,7 @@ public class Timer
             }
             else
             {
-                Debug.Log("Time has run out !");
+               // Debug.Log("Time has run out !");
                 timeRemaining = 0;
                 timerIsRunning = false;
                 clock.text = string.Format("0:{0:00}:{1:0}", 0, 0);

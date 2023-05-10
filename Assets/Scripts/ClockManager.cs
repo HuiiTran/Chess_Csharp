@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
+
 public class ClockManager : MonoBehaviour
 {
     [HideInInspector]
@@ -21,6 +22,7 @@ public class ClockManager : MonoBehaviour
 
     private bool isWhiteTurn = true;
 
+    
     public void Setup(float whiteTime, float blackTime, PieceManager newPm)
     {
 
@@ -33,11 +35,12 @@ public class ClockManager : MonoBehaviour
         clockWhite.Setup(whiteTime, displayWhite);
         clockBlack.Setup(blackTime, displayBlack);
 
-        highlightClockB.SetActive(false);
         highlightClockW.SetActive(true);
+        highlightClockB.SetActive(false);
+        
 
-        highlightClockW.GetComponent<Image>().color = new Color((float)0.36, (float)0.68, (float)0.27, 1);
-        highlightClockB.GetComponent<Image>().color = new Color((float)0.36, (float)0.68, (float)0.27,1);
+        highlightClockW.GetComponent<Image>().color =  new Color((float)0.36, (float)0.68, (float)0.27, 1);
+        highlightClockB.GetComponent<Image>().color =  new Color((float)0.36, (float)0.68, (float)0.27, 1);
     }
 
     public void StartClocks()
@@ -64,13 +67,13 @@ public class ClockManager : MonoBehaviour
             if (clockBlack.runOut)
             {
                 pm.gameState = GameState.WHITE_WIN;
-                
+                pm.ShowResult();
                 launched = false;
             }
             if (clockWhite.runOut)
             {
                 pm.gameState = GameState.BLACK_WIN;
-                
+                pm.ShowResult();
                 launched = false;
             }
         }
@@ -92,6 +95,6 @@ public class ClockManager : MonoBehaviour
         isWhiteTurn = !isWhiteTurn;
         highlightClockW.SetActive(!highlightClockW.activeSelf);
         highlightClockB.SetActive(!highlightClockB.activeSelf);
-
+        
     }
 }
